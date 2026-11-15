@@ -1,0 +1,334 @@
+```html
+<!DOCTYPE html>
+<html lang="hi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>स्मार्ट रसीद जनरेटर ऐप</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', 'Noto Sans Devanagari', sans-serif;
+            background-color: #f1f5f9;
+        }
+        /* Thermal Receipt Style */
+        .thermal-receipt {
+            background: #ffffff;
+            position: relative;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .thermal-receipt::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+            background-size: 16px 16px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between antialiased text-slate-800">
+
+    <!-- Header Navigation -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-receipt text-2xl text-amber-300"></i>
+                <h1 class="text-base font-bold tracking-wide">स्मार्ट रसीद जनरेटर</h1>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="switchTab('generator')" id="nav-gen" class="px-3 py-1.5 bg-indigo-700 text-xs font-semibold rounded-lg shadow transition">
+                    <i class="fa-solid fa-file-pen mr-1"></i> रसीद बनाएँ
+                </button>
+                <button onclick="switchTab('history')" id="nav-hist" class="px-3 py-1.5 hover:bg-indigo-700 text-xs font-semibold rounded-lg transition">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> इतिहास (<span id="history-count">0</span>)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-4xl w-full mx-auto p-3 sm:p-4 flex-grow">
+
+        <!-- TAB 1: GENERATOR & PREVIEW -->
+        <div id="tab-generator" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Left Form Inputs -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="text-sm font-bold text-slate-700 border-b pb-2 flex justify-between items-center">
+                    <span><i class="fa-solid fa-pen-to-square text-indigo-600 mr-2"></i> विवरण भरें</span>
+                    <button onclick="resetForm()" class="text-xs text-rose-500 hover:underline"><i class="fa-solid fa-rotate-right"></i> रीसेट</button>
+                </h2>
+
+                <!-- Company/Business Persistent Settings -->
+                <div class="space-y-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                    <label class="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider"><i class="fa-solid fa-store mr-1"></i> कंपनी / बिजनेस प्रोफाइल (ऑटो-सेव)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">दुकान का नाम</label>
+                            <input type="text" id="shop-name" value="Ranjana Ice Cream" oninput="saveCompanyProfile(); updateReceipt();" placeholder="दुकान का नाम" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">दुकान का मोबाइल नंबर</label>
+                            <input type="tel" id="shop-phone" value="9876543210" oninput="saveCompanyProfile(); updateReceipt();" placeholder="दुकान नंबर" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Info & Delivery Date -->
+                <div class="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">ग्राहक एवं डिलीवरी विवरण</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">ग्राहक का नाम</label>
+                            <input type="text" id="cust-name" placeholder="ग्राहक का नाम" oninput="updateReceipt()" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">ग्राहक WhatsApp नंबर</label>
+                            <input type="tel" id="cust-phone" placeholder="9876543210" oninput="updateReceipt()" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 mb-0.5"><i class="fa-solid fa-calendar-days text-indigo-600"></i> डिलीवरी की तारीख (Delivery Date)</label>
+                        <input type="date" id="delivery-date" oninput="updateReceipt()" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium">
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">आइटम सूची (Products)</label>
+                        <button onclick="addItemRow()" class="px-2.5 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-bold transition flex items-center space-x-1">
+                            <i class="fa-solid fa-plus"></i> <span>आइटम जोड़ें</span>
+                        </button>
+                    </div>
+                    <div id="items-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Dynamic items generated via JS -->
+                    </div>
+                </div>
+
+                <!-- Additional Charges & Advance -->
+                <div class="space-y-3 bg-amber-50/60 p-3 rounded-xl border border-amber-200">
+                    <label class="block text-[11px] font-semibold text-amber-800 uppercase tracking-wider"><i class="fa-solid fa-calculator mr-1"></i> अतिरिक्त चार्ज एवं बयाना</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-1">लेबर / अन्य चार्ज (₹)</label>
+                            <input type="number" id="extra-charge" value="0" min="0" oninput="updateReceipt()" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-1">बयाना / एडवांस (₹)</label>
+                            <input type="number" id="advance-paid" value="0" min="0" oninput="updateReceipt()" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg font-medium text-emerald-700">
+                        </div>
+                    </div>
+                    <div class="flex items-center pt-1">
+                        <label class="text-xs font-semibold text-slate-700 flex items-center cursor-pointer select-none">
+                            <input type="checkbox" id="is-clear" onchange="updateReceipt()" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 mr-2">
+                            <span>भुगतान पूर्ण हो गया है (CLEAR / PAID स्टाम्प)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Live Thermal Receipt Preview -->
+            <div class="flex flex-col space-y-4">
+                <div class="sticky top-16">
+                    <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex justify-between items-center">
+                        <span><i class="fa-solid fa-eye text-indigo-600 mr-1"></i> लाइव रसीद प्रीव्यू</span>
+                        <span class="text-slate-400 font-normal">Thermal Format</span>
+                    </div>
+
+                    <!-- Thermal Receipt Card -->
+                    <div id="printable-receipt" class="thermal-receipt p-5 rounded-t-sm text-xs text-slate-800 space-y-3 border-t-4 border-indigo-600">
+                        
+                        <!-- Header -->
+                        <div class="text-center space-y-0.5 relative">
+                            <h2 id="prev-shop" class="text-sm font-extrabold tracking-wider text-slate-900 uppercase">Ranjana Ice Cream</h2>
+                            <p class="text-[10px] text-slate-500 font-medium">मोबाइल: <span id="prev-shop-phone">9876543210</span></p>
+                            <p class="text-[10px] text-slate-400">कैश / आर्डर भुगतान रसीद</p>
+                            <p id="prev-date" class="text-[10px] text-slate-400">--/--/---- --:--</p>
+
+                            <!-- CLEAR STAMP OVERLAY -->
+                            <div id="clear-stamp" class="absolute top-2 right-2 transform rotate-12 border-2 border-emerald-600 text-emerald-600 font-extrabold px-2 py-0.5 rounded text-[9px] uppercase tracking-widest opacity-0 transition-all duration-300 pointer-events-none">
+                                CLEAR & PAID
+                            </div>
+                        </div>
+
+                        <div class="border-b border-dashed border-slate-300 pb-1"></div>
+
+                        <!-- Customer Details & Delivery Date -->
+                        <div class="space-y-0.5 text-slate-600 text-[11px]">
+                            <div class="flex justify-between">
+                                <span>ग्राहक:</span>
+                                <span id="prev-cust" class="font-bold text-slate-900">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>मोबाइल:</span>
+                                <span id="prev-phone" class="font-medium text-slate-800">-</span>
+                            </div>
+                            <div class="flex justify-between text-indigo-700 font-semibold pt-0.5 border-t border-slate-100">
+                                <span>डिलीवरी तारीख:</span>
+                                <span id="prev-delivery-date">-</span>
+                            </div>
+                        </div>
+
+                        <div class="border-b border-dashed border-slate-300 pb-1"></div>
+
+                        <!-- Items Table -->
+                        <div>
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-slate-500 text-[10px]">
+                                        <th class="py-1">आइटम</th>
+                                        <th class="py-1 text-center">मात्रा</th>
+                                        <th class="py-1 text-right">रेट</th>
+                                        <th class="py-1 text-right">कुल</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prev-items-body" class="divide-y divide-slate-100">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="border-b border-dashed border-slate-300 pb-1"></div>
+
+                        <!-- Totals Calculation -->
+                        <div class="space-y-1 pt-0.5 text-slate-700">
+                            <div class="flex justify-between">
+                                <span>सब-टोटल (Subtotal):</span>
+                                <span id="prev-subtotal" class="font-semibold">₹0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>लेबर / अतिरिक्त चार्ज:</span>
+                                <span id="prev-extra" class="font-semibold">₹0</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-bold text-slate-900 bg-slate-50 p-1.5 rounded">
+                                <span>ग्रैंड टोटल (Grand Total):</span>
+                                <span id="prev-grand-total" class="text-indigo-600">₹0</span>
+                            </div>
+                            <div class="flex justify-between text-emerald-700 font-medium">
+                                <span>बयाना दिया (Advance):</span>
+                                <span id="prev-advance">₹0</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-bold text-rose-600 pt-1 border-t border-slate-200">
+                                <span id="balance-label">बाकी राशि देनी है (Balance Due):</span>
+                                <span id="prev-balance">₹0</span>
+                            </div>
+                        </div>
+
+                        <div class="border-b border-dashed border-slate-300 pb-1"></div>
+
+                        <!-- Footer Note -->
+                        <div class="text-center text-[10px] text-slate-400 pt-0.5">
+                            <p>धन्यवाद! कृपया दोबारा पधारें।</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-3 gap-2 mt-3">
+                        <button onclick="saveAndRecord()" class="px-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-xl shadow transition flex flex-col items-center justify-center space-y-1">
+                            <i class="fa-solid fa-floppy-disk text-xs"></i>
+                            <span>सेव करें</span>
+                        </button>
+                        <button onclick="shareOnWhatsApp()" class="px-2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-semibold rounded-xl shadow transition flex flex-col items-center justify-center space-y-1">
+                            <i class="fa-brands fa-whatsapp text-xs"></i>
+                            <span>WhatsApp</span>
+                        </button>
+                        <button onclick="saveAsGoogleDriveFile()" class="px-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold rounded-xl shadow transition flex flex-col items-center justify-center space-y-1">
+                            <i class="fa-brands fa-google-drive text-xs"></i>
+                            <span>Drive फ़ाइल</span>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 2: SAVED HISTORY -->
+        <div id="tab-history" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-xs font-bold text-slate-700"><i class="fa-solid fa-box-archive text-indigo-600 mr-2"></i> सहेजी गई रसीदें (Saved History)</h2>
+                <button onclick="clearHistory()" class="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition">
+                    <i class="fa-solid fa-trash-can mr-1"></i> इतिहास साफ़ करें
+                </button>
+            </div>
+            <div id="history-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- History Items -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-3 text-[11px] text-slate-400 border-t border-slate-200 bg-white mt-6">
+        स्मार्ट रसीद जनरेटर • ऑफ़लाइन एवं सुरक्षित ऐप
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center space-x-2">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-msg">सफल!</span>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Initial items state
+        let items = [
+            { name: "Vanilla Ice Cream", qty: 15, price: 220 }
+        ];
+
+        let savedReceipts = [];
+
+        window.onload = function() {
+            // Load saved company profile if exists
+            const savedShopName = localStorage.getItem('smart_receipt_shop_name');
+            const savedShopPhone = localStorage.getItem('smart_receipt_shop_phone');
+            if(savedShopName) document.getElementById('shop-name').value = savedShopName;
+            if(savedShopPhone) document.getElementById('shop-phone').value = savedShopPhone;
+
+            // Default Delivery Date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('delivery-date').valueAsDate = tomorrow;
+
+            // Load history from localStorage
+            const stored = localStorage.getItem('smart_receipts_history');
+            if (stored) {
+                try { savedReceipts = JSON.parse(stored); } catch(e) { savedReceipts = []; }
+            }
+            renderItemsForm();
+            updateReceipt();
+            updateHistoryCount();
+        };
+
+        // Save company profile in localStorage
+        function saveCompanyProfile() {
+            const shopName = document.getElementById('shop-name').value;
+            const shopPhone = document.getElementById('shop-phone').value;
+            localStorage.setItem('smart_receipt_shop_name', shopName);
+            localStorage.setItem('smart_receipt_shop_phone', shopPhone);
+        }
+
+        // Tab Switching
+        function switchTab(tab) {
+            const genTab = document.getElementById('tab-generator');
+            const histTab = document.getElementById('tab-history');
+            const navGen = document.getElementById('nav-gen');
+            const navHist = document.getElementById('nav-hist');
+
+            if (tab === 'generator') {
+                genTab.classList.remove('hidden');
+                histTab.classList.add('hidden');
+                navGen.className = "px-3 py-1.5 bg-indigo-700 text-xs font-semibold rounded-lg shadow transition";
+                navHist.className = "px-3 py-1.5 hover:bg-indigo-700 text-xs font-semibold rounded-lg transition";
+            } else {
+                genTab.classList.add('hidden');
+                histTab.classList.remove('hidden'
