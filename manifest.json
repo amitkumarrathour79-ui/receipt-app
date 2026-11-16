@@ -1,0 +1,13 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Smart Receipt Generator",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Smart Receipt",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "description": "\"A smart receipt generator app for business transactions and store management.\"",
+  "lang": "en"
+}
